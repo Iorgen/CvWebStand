@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<html>
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <title>CV Stand</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+    <style>
+        #canvas {
+            display: none;
+        }
+    </style>
+
+</head>
+<body>
+<section role="main" class="container-fluid">
+    <h1>Video Web Testing</h1>
+    <canvas id="canvas">
+    </canvas>
+    <h1>
+        Photo Capture
+    </h1>
+    <p>
+        example
+    </p>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="camera">
+                <video id="video">Video stream not available.</video>
+<!--                <button id="startbutton">Take photo</button>-->
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="output">
+                <img id="photo" alt="The screen capture will appear in this box.">
+            </div>
+        </div>
+
+        <h3>Utils</h3>
+        <div>
+            <button id="connect">Connect</button>&nbsp;|&nbsp;Status:
+            <span id="name">UNKNOWN</span>
+            <span id="status">disconnected</span>
+        </div>
+        <div id="log"
+             style="width:20em;height:15em;overflow:auto;border:1px solid black">
+        </div>
+    </div>
+</section>
+
+
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js">
+</script>
+
+<script language="javascript" type="text/javascript">
+    $(function () {
+        var conn = null;
+        var name = "UNKNOWN";
+
+        function log(msg) {
+            var control = $('#log');
+            var date = new Date();
+            var date_prompt = '(' + date.toISOString().split('T')[1].slice(0, 8) + ') ';
+            control.html(control.html() + date_prompt + msg + '<br/>');
+            control.scrollTop(control.scrollTop() + 1000);
+        }
+
+        function connect() {
+            disconnect();
+            var wsUri = (window.location.protocol == 'https:' && 'wss://' || 'ws://') + window.location.host;
+            conn = new WebSocket(wsUri);
+            //log('Connecting...');
+            conn.onopen = function () {
+                //log('Connected.');
+                update_ui();
+            };
+            conn.onmessage = function (e) {
+                if (typeof e.data == 'object') {
+                    var target = document.getElementById("photo");
+                    url = window.webkitURL.createObjectURL(e.data);
+                    target.onload = function () {
+                        window.webkitURL.revokeObjectURL(url);
+                    };
+                    target.src = url;
+                } else {
+                    var data = JSON.parse(e.data);
+                    switch (data.action) {
+                        case  'connect':
+                            name = data.name;
+                            log('Connected as ' + name);
+                            update_ui();
+                            break;
+                        case  'disconnect':
+                            name = data.name;
+                            log('Disconnected ' + name);
+                            update_ui();
+                            break;
+                        case 'join':
+                            log('Joined ' + data.name);
+                            break;
+                        case 'sent':
+                            log(data.name + ': ' + data.text);
+                            break;
+                    }
+                }
+
+
+            };
+            conn.onclose = function () {
+                log('Disconnected.');
+                conn = null;
+                update_ui();
+            };
+        }
+
+        connect();
+
+        function disconnect() {
+            if (conn != null) {
+                //log('Disconnecting...');
+                conn.close();
+                conn = null;
+                name = 'UNKNOWN';
+                update_ui();
+            }
+        }
+
+        function update_ui() {
+            if (conn == null) {
+                $('#status').text('disconnected');
+                $('#connect').html('Connect');
+                $('#send').prop("disabled", true);
+            } else {
+                $('#status').text('connected (' + conn.protocol + ')');
+                $('#connect').html('Disconnect');
+                $('#send').prop("disabled", false);
+            }
+            $('#name').text(name);
+        }
+
+        $('#connect').on('click', function () {
+            if (conn == null) {
+                connect();
+            } else {
+                disconnect();
+            }
+            update_ui();
+            return false;
+        });
+        // $('#send').on('click', function () {
+        //     var text = $('#text').val();
+        //     // log('Sending: ' + text);
+        //     log(text);
+        //     conn.send(text);
+        //     $('#text').val('').focus();
+        //     return false;
+        // });
+        // $('#text').on('keyup', function (e) {
+        //     if (e.keyCode === 13) {
+        //         $('#send').click();
+        //         return false;
+        //     }
+        // });
+
+        function dataURItoBlob(dataURI) {
+            // convert base64/URLEncoded data component to raw binary data held in a string
+            var byteString;
+            if (dataURI.split(',')[0].indexOf('base64') >= 0)
+                byteString = atob(dataURI.split(',')[1]);
+            else
+                byteString = unescape(dataURI.split(',')[1]);
+
+            // separate out the mime component
+            var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+            // write the bytes of the string to a typed array
+            var ia = new Uint8Array(byteString.length);
+            for (var i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+
+            return new Blob([ia], {type: mimeString});
+        }
+
+        // The width and height of the captured photo. We will set the
+        // width to the value defined here, but the height will be
+        // calculated based on the aspect ratio of the input stream.
+
+        var width = 640;    // We will scale the photo width to this
+        var height = 0;     // This will be computed based on the input stream
+
+        // |streaming| indicates whether or not we're currently streaming
+        // video from the camera. Obviously, we start at false.
+
+        var streaming = false;
+
+        // The various HTML elements we need to configure or control. These
+        // will be set by the startup() function.
+
+        var video = null;
+        var canvas = null;
+        var photo = null;
+        var startbutton = null;
+
+        var video_capt = $("#video").get()[0];
+        var canvas_opt = $("#canvas");
+        var ctx = canvas_opt.get()[0].getContext('2d');
+
+
+        function startup() {
+            video = document.getElementById('video');
+            canvas = document.getElementById('canvas');
+            photo = document.getElementById('photo');
+            startbutton = document.getElementById('startbutton');
+
+            navigator.mediaDevices.getUserMedia({video: true, audio: false})
+                .then(function (stream) {
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(function (err) {
+                    console.log("An error occurred: " + err);
+                });
+
+            video.addEventListener('canplay', function (ev) {
+                if (!streaming) {
+                    height = video.videoHeight / (video.videoWidth / width);
+
+                    // Firefox currently has a bug where the height can't be read from
+                    // the video, so we will make assumptions if this happens.
+
+                    if (isNaN(height)) {
+                        height = width / (4 / 3);
+                    }
+
+                    video.setAttribute('width', width);
+                    video.setAttribute('height', height);
+                    canvas.setAttribute('width', width);
+                    canvas.setAttribute('height', height);
+                    streaming = true;
+                }
+            }, false);
+
+            startbutton.addEventListener('click', function (ev) {
+                takepicture();
+                ev.preventDefault();
+            }, false);
+
+            clearphoto();
+        }
+
+        // Fill the photo with an indication that none has been
+        // captured.
+
+        function clearphoto() {
+            var context = canvas.getContext('2d');
+            context.fillStyle = "#AAA";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            var data = canvas.toDataURL('image/png');
+            photo.setAttribute('src', data);
+        }
+
+        // Capture a photo by fetching the current contents of the video
+        // and drawing it into a canvas, then converting that to a PNG
+        // format data URL. By drawing it on an offscreen canvas and then
+        // drawing that to the screen, we can change its size and/or apply
+        // other changes before drawing it.
+
+        function takepicture() {
+            var context = canvas.getContext('2d');
+            if (width && height) {
+                canvas.width = width;
+                canvas.height = height;
+                context.drawImage(video, 0, 0, width, height);
+                var data = canvas.toDataURL('image/jpeg');
+                photo.setAttribute('src', data);
+                newblob = dataURItoBlob(data);
+                conn.send(newblob);
+            } else {
+                clearphoto();
+            }
+        }
+
+        // Set up our event listener to run the startup process
+        // once loading is complete.
+        window.addEventListener('load', startup, false);
+
+        //
+        timer = setInterval(
+            function () {
+                ctx.drawImage(video_capt, 0, 0, 640, 480);
+                var data = canvas.toDataURL('image/jpeg');
+                // photo.setAttribute('src', data);
+                newblob = dataURItoBlob(data);
+                conn.send(newblob);
+            }, 100);
+    });
+
+</script>
+
+</body>
+</html>

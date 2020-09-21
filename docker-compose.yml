@@ -1,0 +1,42 @@
+version: '3.5'
+
+services:
+  nginx:
+    image: nginx:1.17-alpine
+    container_name: nz01
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
+    depends_on:
+      - backend
+    networks:
+      - backend-internal
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  backend:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    command: gunicorn web_backend.wsgi:application --log-level info --timeout 500 --bind 0.0.0.0:8000
+    container_name: backend
+    expose:
+      - 8000
+    volumes:
+      - static_volume:/home/backend/web/static
+      - media_volume:/home/backend/web/media
+    hostname: backend
+    image: web-image
+    networks:
+      - backend-internal
+    restart: on-failure
+    env_file:
+      - environ/.env.prod
+
+networks:
+  backend-internal:
+
+volumes:
+  static_volume:
+  media_volume:
