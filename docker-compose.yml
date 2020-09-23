@@ -19,7 +19,7 @@ services:
     build:
       context: ./src
       dockerfile: Dockerfile
-    command: gunicorn web_backend.wsgi:application --log-level info --timeout 500 --bind 0.0.0.0:8000
+#    command: gunicorn web_backend.wsgi:application --log-level info --timeout 500 --bind 0.0.0.0:8000
     container_name: backend
     expose:
       - 8000
@@ -31,8 +31,8 @@ services:
     networks:
       - backend-internal
     restart: on-failure
-    env_file:
-      - environ/.env.prod
+#    env_file:
+#      - environ/.env.prod
 
 networks:
   backend-internal:
