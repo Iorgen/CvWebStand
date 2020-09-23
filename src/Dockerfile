@@ -34,7 +34,7 @@ ENV PYTHON python3.6
 RUN apt-get update && \
     apt-get install -y --no-install-recommends python3-pip python3-dev lib${PYTHON} &&  \
     rm -rf /var/lib/apt/lists/*
-ARG package_url=http://registrationcenter-download.intel.com/akdlm/irc_nas/16612/l_openvino_toolkit_p_2020.2.120.tgz
+ARG package_url=http://registrationcenter-download.intel.com/akdlm/irc_nas/16803/l_openvino_toolkit_p_2020.4.287.tgz
 ARG TEMP_DIR=/tmp/openvino_installer
 WORKDIR ${TEMP_DIR}
 ADD ${package_url} ${TEMP_DIR}
@@ -66,26 +66,16 @@ RUN if [ -f "${INTEL_OPENVINO_DIR}"/bin/setupvars.sh ]; then \
         printf "\nsource \${INTEL_OPENVINO_DIR}/bin/setupvars.sh\n" >> /root/.bashrc; \
     fi;
 RUN find "${INTEL_OPENVINO_DIR}/" -name "*.*sh" -type f -exec dos2unix {} \;
-WORKDIR ${INTEL_OPENVINO_DIR}
-CMD ["/bin/bash"]
-
 WORKDIR ${INTEL_OPENVINO_DIR}/cv_stand
 COPY requirements.txt ./
 RUN ${PYTHON} -m pip install --upgrade pip
-RUN ${PYTHON} -m pip install scikit-build
-#RUN ${PYTHON} -m pip install --no-cache-dir -r requirements.txt
+RUN ${PYTHON} -m pip install opencv-python
+RUN ${PYTHON} -m pip list
 COPY . .
 RUN ${PYTHON} -m pip install -e .
+WORKDIR ${INTEL_OPENVINO_DIR}/cv_stand/aiohttpdemo_chat
 USER openvino
-RUN ${PYTHON} /opt/intel/openvino/deployment_tools/inference_engine/samples/python/object_detection_sample_ssd/object_detection_sample_ssd.py
+CMD /bin/bash -c "source /opt/intel/openvino/bin/setupvars.sh && ${PYTHON} main.py"
+#RUN ${PYTHON} /opt/intel/openvino/deployment_tools/inference_engine/samples/python/object_detection_sample_ssd/object_detection_sample_ssd.py
 
-##USER openvino
-#CMD ["/bin/bash"]
-#WORKDIR /home/openvino/cv_stand/aiohttpdemo_chat
-#RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/Users/openvino/openvino/bin/intel64/Release/lib
-#RUN export PYTHONPATH=$PYTHONPATH:/Users/openvino/openvino/bin/intel64/Release/lib/python_api/python3.6
-#RUN ${PYTHON} -m pip list
-#RUN ${PYTHON} main.py
-
-#WORKDIR ${INTEL_OPENVINO_DIR}
 

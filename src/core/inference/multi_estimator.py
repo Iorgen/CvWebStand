@@ -86,10 +86,10 @@ class ProcessOnFrame:
         self.context = InferenceContext()
         context = self.context
 
-        mode_face_detection = '/Users/jurgen/PycharmProjects/WebCamTestStand/src/models/face-detection-retail-0004/FP32/face-detection-retail-0004.xml'
-        model_head_position = '/Users/jurgen/PycharmProjects/WebCamTestStand/src/models/head-pose-estimation-adas-0001/FP32/head-pose-estimation-adas-0001.xml'
-        model_gaze = '/Users/jurgen/PycharmProjects/WebCamTestStand/src/models/gaze-estimation-adas-0002/FP32/gaze-estimation-adas-0002.xml'
-        model_landmark_regressor = '/Users/jurgen/PycharmProjects/WebCamTestStand/src/models/facial-landmarks-35-adas-0002/FP32/facial-landmarks-35-adas-0002.xml'
+        mode_face_detection = '../models/face-detection-retail-0004/FP32/face-detection-retail-0004.xml'
+        model_head_position = '../models/head-pose-estimation-adas-0001/FP32/head-pose-estimation-adas-0001.xml'
+        model_gaze = '../models/gaze-estimation-adas-0002/FP32/gaze-estimation-adas-0002.xml'
+        model_landmark_regressor = '../models/facial-landmarks-35-adas-0002/FP32/facial-landmarks-35-adas-0002.xml'
 
         # Load OpenVino Plugin based on device selection
         context.load_plugins(used_devices, args.cpu_lib, args.gpu_lib)

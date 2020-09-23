@@ -10,32 +10,32 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
     depends_on:
-      - backend
+      - cvbackend
     networks:
-      - backend-internal
+      - cvbackend-internal
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
-  backend:
+  cvbackend:
     build:
       context: ./src
       dockerfile: Dockerfile
 #    command: gunicorn web_backend.wsgi:application --log-level info --timeout 500 --bind 0.0.0.0:8000
-    container_name: backend
+    container_name: cvbackend
     expose:
       - 8000
     volumes:
-      - static_volume:/home/backend/web/static
-      - media_volume:/home/backend/web/media
-    hostname: backend
+      - static_volume:/home/cvbackend/web/static
+      - media_volume:/home/cvbackend/web/media
+    hostname: cvbackend
     image: web-image
     networks:
-      - backend-internal
+      - cvbackend-internal
     restart: on-failure
 #    env_file:
 #      - environ/.env.prod
 
 networks:
-  backend-internal:
+  cvbackend-internal:
 
 volumes:
   static_volume:
