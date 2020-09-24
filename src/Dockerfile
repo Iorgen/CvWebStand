@@ -75,7 +75,7 @@ COPY . .
 RUN ${PYTHON} -m pip install -e .
 WORKDIR ${INTEL_OPENVINO_DIR}/cv_stand/aiohttpdemo_chat
 USER openvino
-CMD /bin/bash -c "source /opt/intel/openvino/bin/setupvars.sh && ${PYTHON} main.py"
-#RUN ${PYTHON} /opt/intel/openvino/deployment_tools/inference_engine/samples/python/object_detection_sample_ssd/object_detection_sample_ssd.py
+#CMD /bin/bash -c "source /opt/intel/openvino/bin/setupvars.sh && ${PYTHON} main.py"
+CMD /bin/bash -c "source /opt/intel/openvino/bin/setupvars.sh && gunicorn main:init_app --bind localhost:8080 --worker-class aiohttp.GunicornWebWorker"
 
 

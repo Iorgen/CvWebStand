@@ -20,6 +20,7 @@ def read_version():
 
 install_requires = ['aiohttp',
                     'aiohttp_jinja2',
+                    'gunicorn',
                     'faker']
 
 

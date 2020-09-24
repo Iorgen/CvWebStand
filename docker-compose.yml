@@ -21,8 +21,10 @@ services:
       dockerfile: Dockerfile
 #    command: gunicorn web_backend.wsgi:application --log-level info --timeout 500 --bind 0.0.0.0:8000
     container_name: cvbackend
-    expose:
-      - 8000
+#    expose:
+#      - 8003
+    ports:
+      - 8001:8080
     volumes:
       - static_volume:/home/cvbackend/web/static
       - media_volume:/home/cvbackend/web/media

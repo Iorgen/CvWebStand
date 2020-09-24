@@ -8,3 +8,6 @@ export PYTHONPATH=$PYTHONPATH:/Users/jesus/openvino/bin/intel64/Release/lib/pyth
 
 # RUN like that 
 https://stackoverflow.com/questions/56483931/how-to-run-environment-initialization-shell-script-from-dockerfile
+
+# TODO
+Start using supervisord  
