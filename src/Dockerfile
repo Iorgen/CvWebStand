@@ -74,8 +74,8 @@ RUN ${PYTHON} -m pip list
 COPY . .
 RUN ${PYTHON} -m pip install -e .
 WORKDIR ${INTEL_OPENVINO_DIR}/cv_stand/aiohttpdemo_chat
-USER openvino
+#USER openvino
 #CMD /bin/bash -c "source /opt/intel/openvino/bin/setupvars.sh && ${PYTHON} main.py"
-CMD /bin/bash -c "source /opt/intel/openvino/bin/setupvars.sh && gunicorn main:init_app --bind localhost:8080 --worker-class aiohttp.GunicornWebWorker"
+CMD /bin/bash -c "source /opt/intel/openvino/bin/setupvars.sh && gunicorn main:init_app --log-level debug --access-logfile '-' --bind 0.0.0.0:8000 --worker-class aiohttp.GunicornWebWorker"
 
 

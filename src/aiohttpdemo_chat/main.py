@@ -29,12 +29,12 @@ async def shutdown(app):
     app['websockets'].clear()
 
 
-def main():
-    logging.basicConfig(level=logging.DEBUG)
+# def main():
+#     logging.basicConfig(level=logging.DEBUG)
+#
+#     app = init_app()
+#     web.run_app(app)
 
-    app = init_app()
-    web.run_app(app)
-
-
-if __name__ == '__main__':
-    main()
+#
+# if __name__ == '__main__':
+#     main()
