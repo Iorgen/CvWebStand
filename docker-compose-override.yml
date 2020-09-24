@@ -1,0 +1,14 @@
+version: '3.5'
+
+services:
+  nginx:
+    image: nginx:1.17-alpine
+    container_name: nginx
+    depends_on:
+      - cvbackend
+    ports:
+      - 80:80
+    volumes:
+      - ./src:/src
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
