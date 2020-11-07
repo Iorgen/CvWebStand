@@ -634,8 +634,8 @@ class DriverMonitoring:
 
             self.draw_final_result(frame, detections, headPosition,
                                    landmarks[0], gaze_vector)
-
-        return frame
+            return frame, landmarks, headPosition, output, gaze_vector
+        return frame, None, None, None, None
 
     def run(self, args):
         """
