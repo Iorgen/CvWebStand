@@ -4,7 +4,8 @@ import jinja2
 
 import aiohttp_jinja2
 from aiohttp import web
-from aiohttpdemo_chat.views import index, rtsp_detection_stream
+from aiohttpdemo_chat.views import rtsp_detection_stream, index
+from aiohttpdemo_chat.api.views import RecognizeHardHatView
 
 
 async def init_app():
@@ -19,8 +20,8 @@ async def init_app():
         app, loader=jinja2.PackageLoader('aiohttpdemo_chat', 'templates'))
 
     app.router.add_get('/', index)
-    # app.router.add_get('/sight_direction', sight_direction)
     app.router.add_get('/rtsp_stream_test', rtsp_detection_stream)
+    app.router.add_view("/api/", RecognizeHardHatView)
     return app
 
 

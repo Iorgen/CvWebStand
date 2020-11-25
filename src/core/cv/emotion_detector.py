@@ -4,7 +4,7 @@ import numpy as np
 from keras import load_model
 from statistics import mode
 from core.utils.singleton import Singleton
-from core.utils.datasets import get_labels
+from core.utils.emotion_datasets import get_labels
 from core.utils.inference import detect_faces
 from core.utils.inference import draw_text
 from core.utils.inference import draw_bounding_box
