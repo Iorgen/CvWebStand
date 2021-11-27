@@ -3,12 +3,32 @@ version: '3.5'
 services:
   nginx:
     image: nginx:1.17-alpine
-    container_name: nginx
-    depends_on:
-      - cvbackend
+    build: ./nginx
+    container_name: nz01
     ports:
       - 80:80
+    depends_on:
+      - detector_db
+      - cvbackend
+    networks:
+      - detector-internal
+    # TODO volumes надо рихтовать для корректной работы
     volumes:
-      - ./src:/src
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+      - ./nginx/debug.nginx.conf:/etc/nginx/conf.d/nginx.conf
+      - static_volume:/home/front_run/web/static
+      - media_volume:/home/front_run/web/media
+
+  detector_db:
+    env_file:
+      - .env
+    ports:
+      - 54320:5432
+
+  front_run_redis:
+    ports:
+      - 6379:6379
+
+#  backend:
+#    command: gunicorn web_backend.wsgi:application --log-level debug --access-logfile '-' --timeout 500 --bind 0.0.0.0:8000
+#    env_file:
+#      - .env

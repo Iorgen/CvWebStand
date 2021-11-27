@@ -3,18 +3,21 @@ version: '3.5'
 services:
   nginx:
     image: nginx:1.17-alpine
-    container_name: nginx
+    container_name: nz01
+    build: ./nginx
     ports:
       - 80:80
       - 443:443
     volumes:
-      - static_volume:/home/backend/web/static
-      - media_volume:/home/backend/web/media
-      - ./nginx/nginx.prod.conf:/etc/nginx/conf.d/nginx.conf
+      - static_volume:/home/${HOME_DIR}/web/static
+      - media_volume:/home/${HOME_DIR}/web/media
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
       - ./security/certbot/conf:/etc/letsencrypt
       - ./security/certbot/www:/var/www/certbot
     depends_on:
-      - cvbackend
+      - front_run
+    networks:
+      - front-run-internal
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
   certbot:
@@ -24,6 +27,18 @@ services:
       - ./security/certbot/conf:/etc/letsencrypt
       - ./security/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  detector_db:
+    container_name: detector_db
+    hostname: detector_db
+    image: postgres:12.0-alpine
+    env_file:
+      - .env
+    networks:
+      - detector-internal
+    restart: on-failure
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
 
   cvbackend:
     build:
@@ -38,6 +53,10 @@ services:
     image: cvbackendimage
     restart: on-failure
 
+networks:
+  detector-internal:
+
 volumes:
   static_volume:
   media_volume:
+  postgres_data:
