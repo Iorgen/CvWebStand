@@ -5,7 +5,7 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   exit 1
 fi
 
-domains=(178.79.133.32)
+domains=(holivator.com www.holivator.com)
 rsa_key_size=4096
 data_path="./security/certbot"
 email="" # Adding a valid address is strongly recommended
