@@ -1,81 +1,72 @@
-FROM ubuntu:18.04
-USER root
-WORKDIR /
-SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
-# Creating user openvino
-RUN useradd -ms /bin/bash openvino && \
-    chown openvino -R /home/openvino
+###########
+# BUILDER #
+###########
 
-ARG DEPENDENCIES="autoconf \
-                  automake \
-                  build-essential \
-                  cmake \
-                  cpio \
-                  curl \
-                  gnupg2 \
-                  libdrm2 \
-                  libglib2.0-0 \
-                  lsb-release \
-                  libgtk-3-0 \
-                  libtool \
-                  udev \
-                  unzip \
-                  dos2unix"
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ${DEPENDENCIES} && \
-    rm -rf /var/lib/apt/lists/*
-WORKDIR /thirdparty
-RUN sed -Ei 's/# deb-src /deb-src /' /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get source ${DEPENDENCIES} && \
-    rm -rf /var/lib/apt/lists/*
-# setup Python
-ENV PYTHON python3.6
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3-pip python3-dev lib${PYTHON} &&  \
-    rm -rf /var/lib/apt/lists/*
-ARG package_url=http://registrationcenter-download.intel.com/akdlm/irc_nas/16803/l_openvino_toolkit_p_2020.4.287.tgz
-ARG TEMP_DIR=/tmp/openvino_installer
-WORKDIR ${TEMP_DIR}
-ADD ${package_url} ${TEMP_DIR}
-# install product by installation script
-ENV INTEL_OPENVINO_DIR /opt/intel/openvino
-RUN tar -xzf ${TEMP_DIR}/*.tgz --strip 1
-RUN sed -i 's/decline/accept/g' silent.cfg && \
-    ${TEMP_DIR}/install.sh -s silent.cfg && \
-    ${INTEL_OPENVINO_DIR}/install_dependencies/install_openvino_dependencies.sh
-WORKDIR /tmp
-RUN rm -rf ${TEMP_DIR}
-# installing dependencies for package
-WORKDIR /tmp
-RUN ${PYTHON} -m pip install --no-cache-dir setuptools && \
-    find "${INTEL_OPENVINO_DIR}/" -type f -name "*requirements*.*" -path "*/${PYTHON}/*" -exec ${PYTHON} -m pip install --no-cache-dir -r "{}" \; && \
-    find "${INTEL_OPENVINO_DIR}/" -type f -name "*requirements*.*" -not -path "*/post_training_optimization_toolkit/*" -not -name "*windows.txt"  -not -name "*ubuntu16.txt" -not -path "*/python3*/*" -not -path "*/python2*/*" -exec ${PYTHON} -m pip install --no-cache-dir -r "{}" \;
-WORKDIR ${INTEL_OPENVINO_DIR}/deployment_tools/open_model_zoo/tools/accuracy_checker
-RUN source ${INTEL_OPENVINO_DIR}/bin/setupvars.sh && \
-    ${PYTHON} -m pip install --no-cache-dir -r ${INTEL_OPENVINO_DIR}/deployment_tools/open_model_zoo/tools/accuracy_checker/requirements.in && \
-    ${PYTHON} ${INTEL_OPENVINO_DIR}/deployment_tools/open_model_zoo/tools/accuracy_checker/setup.py install
-WORKDIR ${INTEL_OPENVINO_DIR}/deployment_tools/tools/post_training_optimization_toolkit
-RUN if [ -f requirements.txt ]; then \
-        ${PYTHON} -m pip install --no-cache-dir -r ${INTEL_OPENVINO_DIR}/deployment_tools/tools/post_training_optimization_toolkit/requirements.txt && \
-        ${PYTHON} ${INTEL_OPENVINO_DIR}/deployment_tools/tools/post_training_optimization_toolkit/setup.py install; \
-    fi;
-# Post-installation cleanup and setting up OpenVINO environment variables
-RUN if [ -f "${INTEL_OPENVINO_DIR}"/bin/setupvars.sh ]; then \
-        printf "\nsource \${INTEL_OPENVINO_DIR}/bin/setupvars.sh\n" >> /home/openvino/.bashrc; \
-        printf "\nsource \${INTEL_OPENVINO_DIR}/bin/setupvars.sh\n" >> /root/.bashrc; \
-    fi;
-RUN find "${INTEL_OPENVINO_DIR}/" -name "*.*sh" -type f -exec dos2unix {} \;
-WORKDIR ${INTEL_OPENVINO_DIR}/cv_stand
-COPY requirements.txt ./
-RUN ${PYTHON} -m pip install --upgrade pip
-RUN ${PYTHON} -m pip install opencv-python
-RUN ${PYTHON} -m pip list
-COPY . .
-RUN ${PYTHON} -m pip install -e .
-WORKDIR ${INTEL_OPENVINO_DIR}/cv_stand/aiohttpdemo_chat
-#USER openvino
-#CMD /bin/bash -c "source /opt/intel/openvino/bin/setupvars.sh && ${PYTHON} main.py"
-CMD /bin/bash -c "source /opt/intel/openvino/bin/setupvars.sh && gunicorn main:init_app --log-level debug --access-logfile '-' --bind 0.0.0.0:8000 --worker-class aiohttp.GunicornWebWorker"
+# pull  official base image
+FROM python:3.8 as builder
+
+# set work directory
+WORKDIR /usr/src/cv_stand
+
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# update OS
+RUN apt-get update && apt-get install -y netcat
+
+# lint
+RUN pip3 install --upgrade pip
+RUN pip3 install flake8
+COPY . /usr/src/cv_stand/
+
+# install dependencies
+COPY ./requirements.txt .
+RUN pip3 wheel --no-cache-dir --no-deps --wheel-dir /usr/src/cv_stand/wheels -r requirements.txt
 
 
+#########
+# FINAL #
+#########
+# pull official base image
+FROM python:3.8
+
+# create directory for the app user
+RUN mkdir -p /home/cv_stand
+
+# create the app user
+RUN groupadd -r cv_stand && useradd -r -g cv_stand cv_stand
+
+# create the appropriate directories
+ENV HOME=/home/cv_stand
+ENV APP_HOME=/home/cv_stand/web
+RUN mkdir $APP_HOME
+RUN mkdir $APP_HOME/static
+RUN mkdir $APP_HOME/media
+WORKDIR $APP_HOME
+
+# install dependencies
+RUN apt-get update && apt-get install -y libpq-dev && apt-get install -y netcat
+COPY --from=builder /usr/src/cv_stand/wheels /wheels
+COPY --from=builder /usr/src/cv_stand/requirements.txt .
+RUN pip3 install --upgrade pip
+RUN pip3 install --no-cache /wheels/*
+
+## copy entrypoint-prod.sh
+#COPY ./entrypoint.sh $APP_HOME
+
+# copy project
+COPY . $APP_HOME
+
+# chown all the files to the app user
+RUN chown -R cv_stand:cv_stand $APP_HOME
+RUN chown -R cv_stand:cv_stand $HOME/.cache
+
+# change to the app user
+USER cv_stand
+
+# run entrypoint.prod.sh #
+#ENTRYPOINT ["/home/cv_stand/web/entrypoint.sh"]
+#CMD ["run"]
+
+CMD /bin/bash -c "gunicorn aiohttpdemo_chat.main:init_app --log-level debug --access-logfile '-' --bind 0.0.0.0:8000 --worker-class aiohttp.GunicornWebWorker"

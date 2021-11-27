@@ -13,20 +13,17 @@ services:
     networks:
       - detector-internal
     # TODO volumes надо рихтовать для корректной работы
+    # TODO volumes надо рихтовать для корректной работы
     volumes:
       - ./nginx/debug.nginx.conf:/etc/nginx/conf.d/nginx.conf
-      - static_volume:/home/front_run/web/static
-      - media_volume:/home/front_run/web/media
+      - static_volume:/home/cv_stand/web/static
+      - media_volume:/home/cv_stand/web/media
 
   detector_db:
     env_file:
       - .env
     ports:
       - 54320:5432
-
-  front_run_redis:
-    ports:
-      - 6379:6379
 
 #  backend:
 #    command: gunicorn web_backend.wsgi:application --log-level debug --access-logfile '-' --timeout 500 --bind 0.0.0.0:8000

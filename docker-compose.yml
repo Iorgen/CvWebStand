@@ -15,9 +15,9 @@ services:
       - ./security/certbot/conf:/etc/letsencrypt
       - ./security/certbot/www:/var/www/certbot
     depends_on:
-      - front_run
+      - cv_stand
     networks:
-      - front-run-internal
+      - detector-internal
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
   certbot:
@@ -40,17 +40,17 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
 
-  cvbackend:
+  cv_stand:
     build:
       context: ./src
       dockerfile: Dockerfile
-    container_name: cvbackend
+    container_name: cv_stand
     expose:
       - "8000"
     volumes:
-      - static_volume:/home/cvbackend/web/static
-      - media_volume:/home/cvbackend/web/media
-    image: cvbackendimage
+      - static_volume:/home/cv_stand/web/static
+      - media_volume:/home/cv_stand/web/media
+    image: cv_standimage
     restart: on-failure
 
 networks:
